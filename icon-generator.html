@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <title>Генератор иконок для игры</title>
+    <style>
+        body {
+            background: #1a0e05;
+            color: #ffd54a;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #ffd54a;
+            background: #050302;
+            border-radius: 12px;
+        }
+
+        button {
+            display: block;
+            margin: 15px auto;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #ffd54a, #b8761a);
+            color: #1a0e05;
+            border: 2px solid #ffd54a;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: .15s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 180, 60, .5)
+        }
+
+        .preview {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 30px 0
+        }
+
+        .preview div {
+            text-align: center
+        }
+
+        .preview p {
+            font-size: 14px;
+            margin-top: 8px
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🐞 Генератор иконок для Жоры</h1>
+    <p>Открой эту страницу, нажми две кнопки, сохрани иконки в assets/</p>
+
+    <div class="preview">
+        <div>
+            <canvas id="c192" width="192" height="192"></canvas>
+            <p>icon-192.png</p>
+        </div>
+        <div>
+            <canvas id="c512" width="512" height="512"></canvas>
+            <p>icon-512.png</p>
+        </div>
+    </div>
+
+    <button onclick="download('c192', 'icon-192.png')">Скачать 192×192</button>
+    <button onclick="download('c512', 'icon-512.png')">Скачать 512×512</button>
+
+    <script>
+        function draw(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const cx = size / 2, cy = size / 2;
+
+            // Фон — радиальный градиент
+            const bg = ctx.createRadialGradient(cx, cy * 0.7, size * 0.1, cx, cy, size * 0.75);
+            bg.addColorStop(0, '#3a2418');
+            bg.addColorStop(0.6, '#1a0e05');
+            bg.addColorStop(1, '#050302');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, size, size);
+
+            // Золотая рамка-круг
+            ctx.strokeStyle = '#ffd54a';
+            ctx.lineWidth = size * 0.025;
+            ctx.beginPath();
+            ctx.arc(cx, cy, size * 0.42, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Эмодзи таракана по центру
+            ctx.font = `${size * 0.55}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🐞', cx, cy + size * 0.02);
+
+            // Свечение из центра
+            const glow = ctx.createRadialGradient(cx, cy, size * 0.05, cx, cy, size * 0.5);
+            glow.addColorStop(0, 'rgba(255, 200, 80, 0.15)');
+            glow.addColorStop(1, 'rgba(255, 200, 80, 0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, size, size);
+        }
+
+        function download(id, filename) {
+            const canvas = document.getElementById(id);
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        draw(document.getElementById('c192'), 192);
+        draw(document.getElementById('c512'), 512);
+    </script>
+</body>
+
+</html>

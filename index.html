@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+        <title>Жора — Кухонный террор</title>
+        <meta name="description" content="Симулятор таракана-пакостника. Гадь, прячься, доводи хозяев до истерики!">
+        
+        <link rel="icon" href="assets/icon-192.png">
+        <link rel="apple-touch-icon" href="assets/icon-192.png">
+        <link rel="manifest" href="manifest.json">
+        
+        <meta name="theme-color" content="#ffd54a">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="Жора">
+        
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <style>
+
+        @font-face {
+    font-family: 'Russo One';
+    src: url('assets/fonts/RussoOne-Regular.ttf') format('truetype');
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Rubik';
+    src: url('assets/fonts/Rubik-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-display: swap;
+}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%;
+            height: 100dvh;
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            color: #fff
+        }
+
+        body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+}
+
+        html, body {
+            overscroll-behavior: none;
+            touch-action: manipulation;
+        }
+        #game, canvas {
+            width: 100vw !important;
+            height: 100dvh !important;
+        }
+
+        #game {
+            position: fixed;
+            inset: 0
+        }
+
+        canvas {
+            display: block;
+            touch-action: none
+        }
+
+        /* ============ HUD ============ */
+        #hud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            text-shadow: 0 2px 6px #000, 0 0 12px #000;
+            font-weight: 800;
+            z-index: 10
+        }
+
+        #hud .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start
+        }
+
+        #hud .stat {
+            font-size: 22px;
+            line-height: 1.3
+        }
+
+        #hud .stat.sram {
+            color: #ffe066
+        }
+
+        #hud .stat.hp {
+            color: #ff5555
+        }
+
+        #hud .stat.wave {
+            color: #ff9f43;
+            text-align: right
+        }
+
+        #host-emote {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 44px;
+            filter: drop-shadow(0 2px 4px #000)
+        }
+
+        #banner {
+            position: absolute;
+            top: 22%;
+            left: 50%;
+            transform: translateX(-50%) scale(.3);
+            font-size: 44px;
+            color: #ffe066;
+            opacity: 0;
+            transition: .3s;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-align: center;
+            text-shadow: 0 4px 0 #000, 0 0 20px #000
+        }
+
+        #banner.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1)
+        }
+
+        /* ============ Джойстик ============ */
+        #joy {
+            position: fixed;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, .35);
+            background: rgba(0, 0, 0, .25);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s;
+            backdrop-filter: blur(4px);
+            z-index: 12
+        }
+
+        #joy.on {
+            opacity: 1
+        }
+
+        #joy .knob {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 224, 102, .85);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px #ffe066
+        }
+
+
+        /* ============ Меню апгрейдов ============ */
+        #upgrade-menu {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .82);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            padding: 24px
+        }
+
+        #upgrade-menu.show {
+            display: flex
+        }
+
+        #upgrade-menu h2 {
+            font-size: 36px;
+            color: #ffe066;
+            margin-bottom: 28px;
+            text-shadow: 0 4px 0 #000;
+            letter-spacing: 2px
+        }
+
+        #upgrade-cards {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center
+        }
+
+        .up-card {
+            width: 220px;
+            padding: 22px 18px;
+            background: #2a1c0e;
+            border: 3px solid #7a4f2a;
+            border-radius: 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: .15s;
+            user-select: none
+        }
+
+        .up-card:hover {
+            border-color: #ffe066;
+            transform: translateY(-6px);
+            box-shadow: 0 12px 32px rgba(255, 224, 102, .25)
+        }
+
+        .up-card:active {
+            transform: translateY(-2px) scale(.98)
+        }
+
+        .up-icon {
+            font-size: 56px;
+            margin-bottom: 10px;
+            line-height: 1
+        }
+
+        .up-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffe066;
+            margin-bottom: 8px
+        }
+
+        .up-desc {
+            font-size: 14px;
+            color: #d9c39a;
+            line-height: 1.4
+        }
+
+        /* ============ Кнопки способностей ============ */
+        #abilities {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 15;
+            pointer-events: none
+        }
+
+        .ab-btn {
+            position: relative;
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            background: rgba(30, 20, 12, .75);
+            border: 3px solid #ffe066;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, .6);
+            overflow: hidden;
+            transition: transform .1s;
+            backdrop-filter: blur(6px)
+        }
+
+        .ab-btn:active {
+            transform: scale(.92)
+        }
+
+        .ab-btn.locked {
+            opacity: .28;
+            filter: grayscale(1);
+            border-color: #555;
+            cursor: default
+        }
+
+        .ab-btn.cooling {
+            border-color: #555
+        }
+
+        .ab-fill {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .72);
+            transform-origin: bottom;
+            transform: scaleY(0);
+            transition: transform .08s linear;
+            pointer-events: none;
+            border-radius: 50%
+        }
+
+        .ab-cd {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffe066;
+            pointer-events: none;
+            text-shadow: 0 2px 4px #000
+        }
+
+        .ab-icon {
+            position: relative;
+            z-index: 2;
+            pointer-events: none
+        }
+
+        .ab-key {
+            position: absolute;
+            bottom: 2px;
+            right: 6px;
+            font-size: 10px;
+            color: #a88;
+            font-weight: 800;
+            z-index: 2;
+            pointer-events: none
+        }
+
+        /* ============ Панель квеста ============ */
+        #quest-panel {
+            position: fixed;
+            left: 14px;
+            top: 90px;
+            z-index: 14;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 260px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(34, 20, 10, .94), rgba(20, 12, 6, .94));
+            border: 2px solid #ffe066;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .55), 0 0 32px rgba(255, 224, 102, .15) inset;
+            backdrop-filter: blur(6px);
+            text-shadow: 0 1px 3px #000
+        }
+
+        #quest-panel.hidden {
+            display: none
+        }
+
+        #quest-panel.pop-in {
+            animation: qp-pop .5s cubic-bezier(.34, 1.56, .64, 1)
+        }
+
+        #quest-panel.tick {
+            transform: scale(1.04)
+        }
+
+        #quest-panel.fade-out {
+            opacity: 0;
+            transform: translateX(-20px)
+        }
+
+        @keyframes qp-pop {
+            0% {
+                transform: translateX(-30px) scale(.8);
+                opacity: 0
+            }
+
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1
+            }
+        }
+
+        .qp-icon {
+            font-size: 34px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 4px #000)
+        }
+
+        .qp-content {
+            flex: 1
+        }
+
+        .qp-title {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #ffb055;
+            font-weight: 900;
+            margin-bottom: 2px
+        }
+
+        .qp-desc {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .qp-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .qp-bar {
+            flex: 1;
+            height: 10px;
+            background: rgba(0, 0, 0, .6);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #5a3a1c
+        }
+
+        .qp-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffb055, #ffe066, #ffb055);
+            background-size: 200% 100%;
+            transition: width .4s ease-out;
+            animation: qp-shine 2.5s linear infinite
+        }
+
+        @keyframes qp-shine {
+            0% {
+                background-position: 0% 50%
+            }
+
+            100% {
+                background-position: 200% 50%
+            }
+        }
+
+        .qp-count {
+            font-size: 13px;
+            font-weight: 900;
+            color: #ffe066;
+            min-width: 40px;
+            text-align: right
+        }
+
+        /* ============ Диалог ============ */
+        #dialog {
+            position: fixed;
+            left: 50%;
+            bottom: 120px;
+            transform: translateX(-50%);
+            z-index: 35;
+            width: min(560px, 92vw);
+            transition: opacity .25s, transform .25s
+        }
+
+        #dialog.hidden {
+            display: none
+        }
+
+        #dialog.pop-in {
+            animation: dlg-pop .35s cubic-bezier(.34, 1.56, .64, 1)
+        }
+
+        #dialog.fade-out {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px)
+        }
+
+        @keyframes dlg-pop {
+            0% {
+                transform: translateX(-50%) translateY(30px) scale(.9);
+                opacity: 0
+            }
+
+            100% {
+                transform: translateX(-50%) translateY(0) scale(1);
+                opacity: 1
+            }
+        }
+
+        .dlg-box {
+            display: flex;
+            gap: 16px;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, rgba(34, 20, 10, .96), rgba(20, 12, 6, .96));
+            border: 3px solid #ffe066;
+            border-radius: 18px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, .7), 0 0 40px rgba(255, 224, 102, .2) inset
+        }
+
+        .dlg-portrait {
+            width: 64px;
+            height: 64px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            background: rgba(0, 0, 0, .4);
+            border-radius: 14px;
+            border: 2px solid #7a4f2a
+        }
+
+        .dlg-content {
+            flex: 1;
+            min-width: 0
+        }
+
+        .dlg-name {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #ffb055;
+            font-weight: 900;
+            margin-bottom: 4px;
+            text-transform: uppercase
+        }
+
+        .dlg-text {
+            font-size: 16px;
+            color: #fff;
+            line-height: 1.4;
+            font-weight: 600;
+            margin-bottom: 14px;
+            transition: opacity .15s
+        }
+
+        .dlg-next {
+            align-self: flex-end;
+            padding: 10px 26px;
+            font-size: 15px;
+            font-weight: 900;
+            background: #4a2c14;
+            color: #ffe066;
+            border: 2px solid #ffe066;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 1px;
+            transition: transform .1s
+        }
+
+        .dlg-next:hover {
+            background: #6a3c1c
+        }
+
+        .dlg-next:active {
+            transform: scale(.95)
+        }
+
+                /* ================================================== */
+        /* ============ ГЛАВНОЕ МЕНЮ (v2) ============ */
+       
+                /* ================================================== */
+        /* ============ ГЛАВНОЕ МЕНЮ — НОЧНАЯ КУХНЯ ============ */
+        /* ================================================== */
+
+        #main-menu {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity .7s ease-out;
+            background: #050302;
+            perspective: 900px;
+        }
+
+        #main-menu.show   { opacity: 1 }
+        #main-menu.hidden { display: none; opacity: 0 }
+
+        /* ========== ФОН — стена (тёмная, обои с полосками) ========== */
+        .scene-wall {
+            position: absolute;
+            inset: 0 0 40% 0;
+            background:
+                repeating-linear-gradient(90deg,
+                    rgba(0, 0, 0, .15) 0 1px,
+                    transparent 1px 60px),
+                linear-gradient(180deg,
+                    #1a0e08 0%,
+                    #2a1810 40%,
+                    #1a0e08 100%);
+            box-shadow: inset 0 -80px 120px rgba(0, 0, 0, .9);
+        }
+
+        /* ========== ФОН — пол (плитка в перспективе) ========== */
+        .scene-floor {
+            position: absolute;
+            left: -20%;
+            right: -20%;
+            bottom: 0;
+            height: 42%;
+            transform: rotateX(62deg);
+            transform-origin: bottom center;
+            background:
+                repeating-linear-gradient(90deg,
+                    transparent 0 78px,
+                    rgba(0, 0, 0, .35) 78px 80px),
+                repeating-linear-gradient(0deg,
+                    transparent 0 78px,
+                    rgba(0, 0, 0, .35) 78px 80px),
+                linear-gradient(180deg, #3a2418 0%, #1a0f08 100%);
+            box-shadow: inset 0 40px 80px rgba(0, 0, 0, .9);
+        }
+
+        /* ========== Окно слева (ночь, луна) ========== */
+        .scene-window {
+            position: absolute;
+            top: 12%;
+            left: 8%;
+            width: 150px;
+            height: 200px;
+            background:
+                radial-gradient(circle at 35% 25%, rgba(180, 200, 255, .5) 0 6%, transparent 7%),
+                radial-gradient(circle at 35% 25%, rgba(120, 140, 200, .12) 0 30%, transparent 31%),
+                linear-gradient(180deg, #0a1228 0%, #050810 100%);
+            border: 8px solid #1a0f08;
+            box-shadow:
+                0 0 60px rgba(100, 130, 200, .2),
+                inset 0 0 40px rgba(0, 0, 0, .9),
+                0 20px 60px rgba(0, 0, 0, .9);
+            opacity: .75;
+        }
+        .scene-window::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, transparent 48%, #1a0f08 48% 52%, transparent 52%),
+                linear-gradient(0deg, transparent 48%, #1a0f08 48% 52%, transparent 52%);
+        }
+
+        /* ========== Лампа слева ========== */
+        .scene-lamp {
+            position: absolute;
+            top: 0;
+            left: 28%;
+            width: 120px;
+            height: 240px;
+            transform-origin: top center;
+            animation: lamp-sway 6s ease-in-out infinite;
+        }
+
+        @keyframes lamp-sway {
+            0%, 100% { transform: rotate(-2.5deg) }
+            50%      { transform: rotate(2.5deg) }
+        }
+
+        .lamp-wire {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 80px;
+            background: linear-gradient(180deg, #1a0f08, #3a2418);
+            transform: translateX(-50%);
+        }
+
+        .lamp-shade {
+            position: absolute;
+            top: 78px;
+            left: 50%;
+            width: 100px;
+            height: 60px;
+            transform: translateX(-50%);
+            background:
+                linear-gradient(180deg,
+                    #4a2c14 0%,
+                    #2a1808 100%);
+            clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%);
+            border-bottom: 3px solid #1a0e08;
+        }
+
+        .lamp-bulb {
+            position: absolute;
+            top: 132px;
+            left: 50%;
+            width: 18px;
+            height: 18px;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff5c0 0%, #ffcc66 50%, #ff9933 100%);
+            box-shadow: 0 0 20px #ffcc66;
+            animation: bulb-flicker 0.15s steps(1) infinite;
+        }
+
+        @keyframes bulb-flicker {
+            0%, 95%   { opacity: 1 }
+            96%       { opacity: .5 }
+            97%       { opacity: 1 }
+            98%       { opacity: .3 }
+            99%, 100% { opacity: 1 }
+        }
+
+        .lamp-glow {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            width: 600px;
+            height: 600px;
+            transform: translate(-50%, -30%);
+            background: radial-gradient(circle,
+                rgba(255, 200, 100, .22) 0%,
+                rgba(255, 150, 50, .08) 30%,
+                transparent 60%);
+            pointer-events: none;
+            animation: glow-breathe 5s ease-in-out infinite;
+        }
+
+        @keyframes glow-breathe {
+            0%, 100% { opacity: .85 }
+            50%      { opacity: 1 }
+        }
+
+        /* ========== Свеча справа ========== */
+        .scene-candle {
+            position: absolute;
+            top: 68%;
+            right: 6%;
+            width: 40px;
+            height: 120px;
+        }
+        .candle-body {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 22px;
+            height: 70px;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, #f0e8c8 0%, #c9b888 100%);
+            border-radius: 2px 2px 4px 4px;
+            box-shadow: 0 0 20px rgba(255, 200, 100, .3);
+        }
+        .candle-body::before {
+            content: "";
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            width: 24px;
+            height: 6px;
+            transform: translateX(-50%);
+            background: #8a6a30;
+            border-radius: 2px;
+        }
+        .candle-flame {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            width: 10px;
+            height: 22px;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse at 50% 80%,
+                #fff5c0 0%,
+                #ffcc44 40%,
+                #ff8833 70%,
+                transparent 100%);
+            border-radius: 50% 50% 40% 40%;
+            filter: blur(.5px);
+            animation: flame-dance .3s ease-in-out infinite alternate;
+            box-shadow: 0 0 30px #ffcc44, 0 0 60px rgba(255, 150, 50, .5);
+        }
+        @keyframes flame-dance {
+            0%   { transform: translateX(-50%) scaleY(1) scaleX(1) }
+            50%  { transform: translateX(-50%) scaleY(1.15) scaleX(.95) }
+            100% { transform: translateX(-50%) scaleY(1.05) scaleX(1.05) }
+        }
+        .candle-halo {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            transform: translateX(-50%);
+            background: radial-gradient(circle,
+                rgba(255, 180, 80, .12) 0%,
+                rgba(255, 120, 40, .04) 30%,
+                transparent 60%);
+            pointer-events: none;
+            animation: glow-breathe 3s ease-in-out infinite;
+        }
+
+        /* ========== Пылинки ========== */
+        .dust {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .dust span {
+            position: absolute;
+            bottom: -10px;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 220, 150, .7);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(255, 200, 100, .8);
+            animation: dust-rise linear infinite;
+        }
+        .dust span:nth-child(1)  { left: 10%; animation-duration: 14s; animation-delay: 0s }
+        .dust span:nth-child(2)  { left: 18%; animation-duration: 11s; animation-delay: 2s }
+        .dust span:nth-child(3)  { left: 27%; animation-duration: 17s; animation-delay: 5s }
+        .dust span:nth-child(4)  { left: 35%; animation-duration: 13s; animation-delay: 1s }
+        .dust span:nth-child(5)  { left: 42%; animation-duration: 16s; animation-delay: 3s }
+        .dust span:nth-child(6)  { left: 52%; animation-duration: 12s; animation-delay: 7s }
+        .dust span:nth-child(7)  { left: 60%; animation-duration: 18s; animation-delay: 4s }
+        .dust span:nth-child(8)  { left: 68%; animation-duration: 15s; animation-delay: 6s }
+        .dust span:nth-child(9)  { left: 75%; animation-duration: 13s; animation-delay: 2.5s }
+        .dust span:nth-child(10) { left: 82%; animation-duration: 17s; animation-delay: 8s }
+        .dust span:nth-child(11) { left: 88%; animation-duration: 14s; animation-delay: 1.5s }
+        .dust span:nth-child(12) { left: 15%; animation-duration: 19s; animation-delay: 9s }
+        .dust span:nth-child(13) { left: 48%; animation-duration: 12s; animation-delay: 10s }
+        .dust span:nth-child(14) { left: 92%; animation-duration: 16s; animation-delay: 0.5s }
+        .dust span:nth-child(15) { left: 63%; animation-duration: 15s; animation-delay: 11s }
+
+        @keyframes dust-rise {
+            0%   { transform: translateY(0) translateX(0); opacity: 0 }
+            10%  { opacity: 1 }
+            90%  { opacity: .8 }
+            100% { transform: translateY(-110vh) translateX(30px); opacity: 0 }
+        }
+
+        /* ========== Ползающий таракан (SVG-подобная фигурка) ========== */
+        .menu-bug {
+            position: absolute;
+            bottom: 30px;
+            left: -120px;
+            width: 60px;
+            height: 40px;
+            z-index: 8;
+            animation: bug-crawl-bottom 24s linear infinite;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .9));
+        }
+
+        @keyframes bug-crawl-bottom {
+            0%   { left: -120px }
+            50%  { left: calc(100% + 60px) }
+            51%  { left: calc(100% + 60px); transform: scaleX(-1) }
+            100% { left: -120px; transform: scaleX(-1) }
+        }
+
+        .bug-body {
+            position: relative;
+            width: 60px;
+            height: 40px;
+        }
+
+        .bug-body::before {
+            content: "";
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 40px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #5c3819 0%, #2a1808 100%);
+            box-shadow: inset 0 -4px 8px rgba(0, 0, 0, .6), inset 0 3px 6px rgba(120, 80, 40, .5);
+        }
+
+        .bug-head {
+            position: absolute;
+            top: 12px;
+            left: 0;
+            width: 14px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1a0f08;
+        }
+
+        .bug-ant {
+            position: absolute;
+            top: 6px;
+            width: 20px;
+            height: 2px;
+            background: #1a0f08;
+            border-radius: 2px;
+            transform-origin: right center;
+        }
+        .bug-ant-l { left: -14px; transform: rotate(-30deg); animation: ant-wave-l 1.2s ease-in-out infinite }
+        .bug-ant-r { left: -14px; transform: rotate(30deg); animation: ant-wave-r 1.2s ease-in-out infinite }
+        @keyframes ant-wave-l {
+            0%, 100% { transform: rotate(-30deg) }
+            50%      { transform: rotate(-45deg) }
+        }
+        @keyframes ant-wave-r {
+            0%, 100% { transform: rotate(30deg) }
+            50%      { transform: rotate(45deg) }
+        }
+
+        .bug-leg {
+            position: absolute;
+            width: 16px;
+            height: 2px;
+            background: #1a0f08;
+            border-radius: 2px;
+            transform-origin: left center;
+        }
+        .bug-leg-1 { top: 8px;  left: 12px; transform: rotate(-50deg); animation: leg-move 0.6s ease-in-out infinite }
+        .bug-leg-2 { top: 18px; left: 12px; transform: rotate(-15deg); animation: leg-move 0.6s ease-in-out infinite 0.1s }
+        .bug-leg-3 { top: 28px; left: 12px; transform: rotate(35deg);  animation: leg-move 0.6s ease-in-out infinite 0.2s }
+        .bug-leg-4 { top: 8px;  right: 8px; transform: scaleX(-1) rotate(-50deg); animation: leg-move 0.6s ease-in-out infinite 0.3s }
+        .bug-leg-5 { top: 18px; right: 8px; transform: scaleX(-1) rotate(-15deg); animation: leg-move 0.6s ease-in-out infinite 0.4s }
+        .bug-leg-6 { top: 28px; right: 8px; transform: scaleX(-1) rotate(35deg);  animation: leg-move 0.6s ease-in-out infinite 0.5s }
+
+        @keyframes leg-move {
+            0%, 100% { transform: rotate(-50deg) }
+            50%      { transform: rotate(-70deg) }
+        }
+
+        /* ========== Контейнер меню ========== */
+        .menu-container {
+            position: relative;
+            z-index: 10;
+            margin: 0 auto;
+            width: min(440px, 88vw);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px 0;
+        }
+
+        /* ========== Заголовок ========== */
+        .menu-title {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .title-bug {
+            font-size: 42px;
+            line-height: 1;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 20px rgba(255, 150, 50, .6));
+            animation: bug-bob 3s ease-in-out infinite;
+        }
+
+        @keyframes bug-bob {
+            0%, 100% { transform: translateY(0) rotate(-3deg) }
+            50%      { transform: translateY(-6px) rotate(3deg) }
+        }
+
+        .menu-title h1 {
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            font-size: 72px;
+            font-weight: 900;
+            letter-spacing: 12px;
+            color: #ffd54a;
+            line-height: 1;
+            margin: 0;
+            text-shadow:
+                4px 4px 0 #2a1408,
+                -2px -2px 0 #2a1408,
+                2px -2px 0 #2a1408,
+                -2px 2px 0 #2a1408,
+                0 8px 0 #6a3010,
+                0 12px 30px rgba(0, 0, 0, .95),
+                0 0 60px rgba(255, 180, 60, .6);
+            animation: title-glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes title-glow {
+            0%   { text-shadow:
+                4px 4px 0 #2a1408, -2px -2px 0 #2a1408,
+                2px -2px 0 #2a1408, -2px 2px 0 #2a1408,
+                0 8px 0 #6a3010, 0 12px 30px rgba(0, 0, 0, .95),
+                0 0 40px rgba(255, 180, 60, .4) }
+            100% { text-shadow:
+                4px 4px 0 #2a1408, -2px -2px 0 #2a1408,
+                2px -2px 0 #2a1408, -2px 2px 0 #2a1408,
+                0 8px 0 #6a3010, 0 12px 30px rgba(0, 0, 0, .95),
+                0 0 90px rgba(255, 180, 60, .9) }
+        }
+
+        .menu-title .sub {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 5px 18px;
+            font-size: 11px;
+            color: #ffad44;
+            letter-spacing: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            background: rgba(30, 15, 5, .7);
+            border-top: 1px solid rgba(255, 150, 60, .4);
+            border-bottom: 1px solid rgba(255, 150, 60, .4);
+            text-shadow: 0 1px 0 #000;
+        }
+
+        .menu-page { display: none }
+        .menu-page.active {
+            display: block;
+            animation: page-in .4s ease-out;
+        }
+
+        @keyframes page-in {
+            from { opacity: 0; transform: translateY(12px) }
+            to   { opacity: 1; transform: translateY(0) }
+        }
+
+        .menu-page-title {
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            font-size: 26px;
+            color: #ffd54a;
+            text-align: center;
+            letter-spacing: 10px;
+            margin-bottom: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-shadow: 0 3px 0 #000, 0 0 20px rgba(255, 180, 60, .6);
+        }
+
+        /* ========== Кнопки меню ========== */
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .menu-btn {
+            position: relative;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, rgba(46, 26, 12, .9), rgba(20, 10, 4, .95));
+            border: 2px solid #7a4f2a;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            color: #ffe066;
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            transition: all .25s cubic-bezier(.34, 1.4, .64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            box-shadow:
+                0 6px 20px rgba(0, 0, 0, .7),
+                inset 0 1px 0 rgba(255, 200, 80, .15),
+                inset 0 -3px 10px rgba(0, 0, 0, .6);
+        }
+
+        .btn-bg {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 200, 100, .3) 50%, transparent);
+            transform: translateX(-100%);
+            transition: transform .6s;
+            pointer-events: none;
+        }
+
+        .btn-label {
+            position: relative;
+            z-index: 2;
+            transition: transform .25s;
+        }
+
+        .btn-arrow {
+            position: relative;
+            z-index: 2;
+            color: #d4af37;
+            font-size: 22px;
+            transition: all .25s;
+            opacity: .6;
+        }
+
+        /* Hover */
+        .menu-btn:hover {
+            border-color: #ffd54a;
+            color: #fff5b8;
+            transform: translateX(8px) scale(1.02);
+            box-shadow:
+                0 12px 32px rgba(255, 180, 60, .3),
+                0 0 40px rgba(255, 180, 60, .25) inset,
+                inset 0 1px 0 rgba(255, 220, 120, .4);
+        }
+        .menu-btn:hover .btn-bg { transform: translateX(100%) }
+        .menu-btn:hover .btn-arrow {
+            color: #ffd54a;
+            opacity: 1;
+            transform: translateX(6px);
+        }
+
+        .menu-btn:active { transform: translateX(4px) scale(.99) }
+
+        /* Главная кнопка ИГРАТЬ */
+        .menu-btn.primary {
+            padding: 22px 28px;
+            font-size: 26px;
+            letter-spacing: 10px;
+            color: #1a0e05;
+            background: linear-gradient(135deg, #ffd54a 0%, #e8a020 50%, #b8761a 100%);
+            border-color: #ffd54a;
+            box-shadow:
+                0 10px 32px rgba(0, 0, 0, .8),
+                0 0 60px rgba(255, 200, 80, .5),
+                inset 0 2px 0 rgba(255, 255, 200, .8),
+                inset 0 -4px 12px rgba(120, 60, 10, .5);
+            animation: primary-pulse 2.2s ease-in-out infinite;
+            text-shadow: 0 2px 0 rgba(255, 255, 200, .5);
+        }
+
+        @keyframes primary-pulse {
+            0%, 100% {
+                box-shadow:
+                    0 10px 32px rgba(0, 0, 0, .8),
+                    0 0 40px rgba(255, 200, 80, .4),
+                    inset 0 2px 0 rgba(255, 255, 200, .8),
+                    inset 0 -4px 12px rgba(120, 60, 10, .5);
+            }
+            50% {
+                box-shadow:
+                    0 10px 32px rgba(0, 0, 0, .8),
+                    0 0 90px rgba(255, 200, 80, .85),
+                    inset 0 2px 0 rgba(255, 255, 200, .9),
+                    inset 0 -4px 12px rgba(120, 60, 10, .5);
+            }
+        }
+
+        .menu-btn.primary .btn-arrow {
+            color: #1a0e05;
+            opacity: .9;
+        }
+
+        .menu-btn.primary:hover {
+            color: #000;
+            background: linear-gradient(135deg, #ffe170 0%, #ffb040 50%, #d89030 100%);
+            transform: translateX(8px) scale(1.03);
+        }
+
+        /* ========== Скины ========== */
+                #menu-skins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 12px;
+            padding: 2px;
+            max-height: none;
+            overflow: visible;
+            scrollbar-width: none;
+        }
+        #menu-skins-grid::-webkit-scrollbar { display: none }
+        .skin-card {
+            position: relative;
+            padding: 14px 8px;
+            background: linear-gradient(135deg, rgba(46, 26, 12, .85), rgba(20, 10, 4, .92));
+            border: 2px solid #7a4f2a;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: .18s;
+            user-select: none;
+        }
+        .skin-card:hover:not(.locked) {
+            border-color: #ffd54a;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 24px rgba(255, 180, 60, .35);
+        }
+        .skin-card.selected {
+            border-color: #ffd54a;
+            background: linear-gradient(135deg, rgba(80, 45, 18, 1), rgba(50, 25, 8, 1));
+            box-shadow: 0 0 24px rgba(255, 180, 60, .5) inset;
+        }
+        .skin-card.locked { opacity: .5; cursor: default; filter: grayscale(.6) }
+        .skin-icon { font-size: 38px; margin-bottom: 6px; line-height: 1; filter: drop-shadow(0 2px 6px #000) }
+        .skin-name { font-size: 13px; color: #ffe066; font-weight: 800; margin-bottom: 4px; letter-spacing: 1px }
+        .skin-desc { font-size: 10px; color: #d9c39a; line-height: 1.3 }
+        .skin-badge { position: absolute; top: 5px; right: 5px; font-size: 8px; color: #1a0e05; background: #ffd54a; padding: 2px 5px; border-radius: 3px; font-weight: 900; letter-spacing: 1px }
+        .skin-lock { position: absolute; top: 5px; right: 5px; font-size: 14px; filter: drop-shadow(0 2px 3px #000) }
+
+        /* ========== Рекорды ========== */
+        #menu-records-body { max-width: 100%; margin: 0 auto }
+        .rec-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; margin-bottom: 10px;
+            background: linear-gradient(135deg, rgba(46, 26, 12, .75), rgba(20, 10, 4, .9));
+            border: 2px solid #7a4f2a;
+            border-radius: 4px;
+        }
+        .rec-label { font-size: 14px; color: #d9c39a; font-weight: 700; letter-spacing: 2px }
+        .rec-value { font-size: 22px; color: #ffd54a; font-weight: 900; text-shadow: 0 2px 0 #000 }
+
+        /* ========== Настройки ========== */
+        .settings-row { margin-bottom: 24px }
+        .settings-label {
+            font-size: 13px; color: #d9c39a; font-weight: 800;
+            letter-spacing: 3px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            text-transform: uppercase;
+        }
+        .settings-value { color: #ffd54a; font-size: 15px; text-shadow: 0 2px 0 #000; min-width: 46px; text-align: right }
+
+        .roach-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 34px;
+            background: transparent; outline: none;
+            cursor: pointer; margin: 0; padding: 0;
+        }
+        .roach-slider::-webkit-slider-runnable-track {
+            height: 8px; border-radius: 4px;
+            background: linear-gradient(90deg, #5a3010 0%, #d4af37 100%);
+            border: 1px solid #2a1808;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, .7);
+        }
+        .roach-slider::-moz-range-track {
+            height: 8px; border-radius: 4px;
+            background: linear-gradient(90deg, #5a3010 0%, #d4af37 100%);
+            border: 1px solid #2a1808;
+        }
+        .roach-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 36px; height: 36px; margin-top: -15px;
+            background: transparent;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><text x='50%' y='78%' font-size='36' text-anchor='middle' dominant-baseline='middle'>🪳</text></svg>");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: grab;
+            filter: drop-shadow(0 3px 6px #000);
+            transition: transform .1s;
+        }
+        .roach-slider::-webkit-slider-thumb:active { transform: scale(1.15); cursor: grabbing }
+        .roach-slider::-moz-range-thumb {
+            width: 36px; height: 36px;
+            background: transparent; border: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><text x='50%' y='78%' font-size='36' text-anchor='middle' dominant-baseline='middle'>🪳</text></svg>");
+            background-size: contain;
+            background-repeat: no-repeat;
+            cursor: grab;
+            filter: drop-shadow(0 3px 6px #000);
+        }
+
+        /* ========== ОБ ИГРЕ ========== */
+        #menu-page-about p {
+            color: #d9c39a; font-size: 14px; line-height: 1.7;
+            margin-bottom: 12px; text-align: center;
+        }
+
+        /* ========== Кнопка НАЗАД ========== */
+        .menu-back {
+            display: block;
+            margin: 22px auto 0;
+            padding: 12px 30px;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, rgba(46, 26, 12, .9), rgba(20, 10, 4, .95));
+            color: #d4af37;
+            border: 2px solid #7a4f2a;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: .2s;
+        }
+        .menu-back:hover {
+            border-color: #ffd54a;
+            color: #ffe066;
+            transform: translateX(-6px);
+            box-shadow: 0 6px 20px rgba(255, 180, 60, .35);
+        }
+
+        /* ================================================== */
+/* ============ МОБИЛЬНЫЙ (телефон, любая ориентация) ============ */
+/* ================================================== */
+@media (max-height: 700px), (orientation: landscape) and (max-width: 1000px) {
+
+    #main-menu {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 8px !important;
+    }
+    .menu-container {
+        width: min(520px, 92vw) !important;
+        padding: clamp(10px, 2vh, 20px) clamp(10px, 2vw, 20px) !important;
+        max-height: 96vh;
+        overflow-y: auto;
+    }
+    .menu-title {
+        margin-bottom: clamp(8px, 1.5vh, 20px) !important;
+    }
+    .menu-title h1 {
+        font-size: clamp(28px, 5vh, 44px) !important;
+        letter-spacing: clamp(3px, 0.8vw, 6px) !important;
+    }
+    .menu-title .sub {
+        font-size: clamp(7px, 1vh, 9px) !important;
+        letter-spacing: clamp(2px, 0.5vw, 4px) !important;
+        margin-top: 6px !important;
+    }
+    .title-bug {
+        font-size: clamp(24px, 4vh, 36px) !important;
+        margin-bottom: 4px !important;
+    }
+    .menu-buttons { gap: clamp(5px, 1vh, 10px) !important }
+    .menu-btn {
+        font-size: clamp(12px, 1.8vh, 16px) !important;
+        padding: clamp(8px, 1.4vh, 13px) clamp(12px, 1.8vw, 18px) !important;
+        letter-spacing: clamp(2px, 0.5vw, 5px) !important;
+    }
+    .menu-btn.primary {
+        font-size: clamp(14px, 2.2vh, 18px) !important;
+        padding: clamp(10px, 1.6vh, 15px) !important;
+        letter-spacing: clamp(3px, 0.7vw, 6px) !important;
+    }
+    .menu-footer {
+        font-size: clamp(7px, 1vh, 9px) !important;
+        letter-spacing: clamp(2px, 0.5vw, 4px) !important;
+        margin-top: clamp(8px, 1.5vh, 18px) !important;
+    }
+    #menu-skins-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: clamp(4px, 1vh, 10px) !important;
+    }
+    .skin-card { padding: clamp(6px, 1vh, 12px) 4px !important }
+    .skin-icon { font-size: clamp(20px, 3vh, 32px) !important }
+    .skin-name { font-size: clamp(9px, 1.2vh, 11px) !important }
+    .skin-desc { font-size: clamp(7px, 1vh, 9px) !important }
+    .skin-badge { font-size: 7px !important; padding: 1px 4px !important }
+    .skin-lock { font-size: 12px !important }
+    .skin-chain { height: 14px !important; top: -6px !important }
+    .rec-row {
+        padding: clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 16px) !important;
+        margin-bottom: clamp(4px, 0.8vh, 8px) !important;
+    }
+    .rec-label { font-size: clamp(10px, 1.3vh, 13px) !important }
+    .rec-value { font-size: clamp(13px, 1.8vh, 18px) !important }
+    .settings-row { margin-bottom: clamp(10px, 1.5vh, 18px) !important }
+    .settings-label { font-size: clamp(10px, 1.3vh, 13px) !important }
+    .settings-value { font-size: clamp(11px, 1.4vh, 14px) !important }
+    .roach-slider { height: clamp(24px, 4vh, 32px) !important }
+    .roach-slider::-webkit-slider-thumb {
+        width: clamp(24px, 4vh, 32px) !important;
+        height: clamp(24px, 4vh, 32px) !important;
+        margin-top: calc(clamp(24px, 4vh, 32px) / -2 + 4px) !important;
+    }
+    .menu-back {
+        padding: clamp(7px, 1.2vh, 11px) clamp(16px, 2vw, 26px) !important;
+        font-size: clamp(10px, 1.3vh, 12px) !important;
+        letter-spacing: clamp(1px, 0.3vw, 3px) !important;
+        margin-top: clamp(10px, 1.5vh, 18px) !important;
+    }
+    #level-select { gap: clamp(8px, 1.5vh, 16px) !important; padding: 10px !important }
+    #level-select h1 {
+        font-size: clamp(18px, 3vh, 26px) !important;
+        letter-spacing: clamp(2px, 0.5vw, 4px) !important;
+        margin-bottom: 4px !important;
+    }
+    .level-cards { gap: clamp(10px, 2vw, 20px) !important }
+    .level-card {
+        width: clamp(140px, 30vw, 200px) !important;
+        height: clamp(180px, 40vh, 260px) !important;
+    }
+    .level-card-bug { font-size: clamp(40px, 8vh, 60px) !important; margin-top: clamp(8px, 1.5vh, 16px) !important }
+    .level-card-title { font-size: clamp(14px, 2vh, 20px) !important; letter-spacing: 1px !important }
+    .level-card-sub { font-size: clamp(9px, 1.2vh, 11px) !important }
+    .level-card-tag { font-size: clamp(7px, 1vh, 9px) !important; padding: 3px 8px !important }
+    #level-back { padding: 8px 20px !important; font-size: clamp(10px, 1.3vh, 13px) !important }
+    #hud { padding: 8px !important }
+    #hud .stat { font-size: clamp(12px, 1.8vh, 15px) !important; line-height: 1.15 !important }
+    #hud .stat.wave { font-size: clamp(12px, 1.8vh, 15px) !important }
+    #hud .stat.wave span { font-size: clamp(8px, 1.2vh, 11px) !important }
+    #host-emote { font-size: clamp(24px, 3.5vh, 32px) !important; top: clamp(4px, 1vh, 10px) !important }
+    #banner { font-size: clamp(16px, 2.6vh, 22px) !important; top: 12% !important; letter-spacing: 1px !important }
+    #abilities {
+        right: clamp(6px, 1vw, 12px) !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        gap: clamp(4px, 1vh, 8px) !important;
+    }
+    .ab-btn {
+        width: clamp(40px, 6vh, 54px) !important;
+        height: clamp(40px, 6vh, 54px) !important;
+        font-size: clamp(18px, 2.8vh, 24px) !important;
+        border-width: 2px !important;
+    }
+    .ab-cd { font-size: clamp(12px, 2vh, 18px) !important }
+    .ab-key { font-size: clamp(6px, 0.9vh, 8px) !important }
+    #quest-panel {
+        left: 8px !important;
+        top: clamp(50px, 9vh, 70px) !important;
+        min-width: clamp(150px, 28vw, 200px) !important;
+        padding: 6px 10px !important;
+        gap: 6px !important;
+    }
+    .qp-icon { font-size: clamp(18px, 2.5vh, 24px) !important }
+    .qp-title { font-size: clamp(8px, 1.1vh, 10px) !important }
+    .qp-desc { font-size: clamp(9px, 1.2vh, 11px) !important }
+    .qp-count { font-size: clamp(9px, 1.2vh, 11px) !important }
+    .qp-bar { height: 6px !important }
+    #dialog { bottom: clamp(40px, 10vh, 80px) !important; width: 92vw !important }
+    .dlg-box { padding: 10px 12px !important; gap: 8px !important }
+    .dlg-portrait {
+        width: clamp(36px, 6vh, 48px) !important;
+        height: clamp(36px, 6vh, 48px) !important;
+        font-size: clamp(24px, 4vh, 32px) !important;
+    }
+    .dlg-name { font-size: clamp(8px, 1.1vh, 10px) !important }
+    .dlg-text { font-size: clamp(11px, 1.5vh, 13px) !important; margin-bottom: 8px !important }
+    .dlg-next { padding: 7px 14px !important; font-size: clamp(10px, 1.3vh, 12px) !important }
+    .tut-banner {
+        top: clamp(20px, 6vh, 60px) !important;
+        padding: clamp(8px, 1.5vh, 14px) clamp(12px, 2vw, 24px) !important;
+        max-width: 88vw !important;
+    }
+    .tut-text {
+        font-size: clamp(12px, 2vh, 16px) !important;
+        letter-spacing: clamp(1px, 0.3vw, 3px) !important;
+        line-height: 1.25 !important;
+    }
+    .tut-dots {
+        padding: 5px 10px !important;
+        gap: 5px !important;
+        bottom: 5% !important;
+    }
+    .tut-dot { width: 6px !important; height: 6px !important }
+    .tut-pointer { width: 40px !important; height: 40px !important }
+    .ov-panel {
+        padding: clamp(16px, 3vh, 30px) clamp(16px, 3vw, 36px) !important;
+        min-width: 88vw !important;
+    }
+    .ov-icon { font-size: clamp(36px, 6vh, 54px) !important; margin-bottom: 6px !important }
+    .ov-title {
+        font-size: clamp(20px, 3.2vh, 30px) !important;
+        letter-spacing: clamp(2px, 0.5vw, 4px) !important;
+    }
+    .ov-sub { font-size: clamp(9px, 1.3vh, 12px) !important; margin-bottom: 14px !important }
+    .ov-stats { gap: 8px !important; margin-bottom: 16px !important }
+    .ov-stat {
+        min-width: clamp(70px, 12vw, 100px) !important;
+        padding: 8px 8px !important;
+    }
+    .ov-stat-label { font-size: clamp(7px, 1vh, 9px) !important }
+    .ov-stat-value { font-size: clamp(14px, 2vh, 18px) !important }
+    #overlay button {
+        padding: 10px 20px !important;
+        font-size: clamp(12px, 1.8vh, 16px) !important;
+        letter-spacing: 2px !important;
+    }
+}
+
+        .menu-footer {
+            font-family: 'Rubik', 'Arial Black', sans-serif;
+            text-align: center;
+            margin-top: 18px;
+            font-size: 9px;
+            color: rgba(255, 213, 74, .45);
+            letter-spacing: 5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+
+        /* ================================================== */
+        /* ============ ВЫБОР УРОВНЯ ============ */
+        /* ================================================== */
+        #level-select {
+            position: fixed;
+            inset: 0;
+            z-index: 190;
+            background: radial-gradient(circle at 50% 40%, rgba(60, 40, 20, 0.96), rgba(12, 6, 3, 0.99));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 24px;
+            opacity: 0;
+            transition: opacity .4s
+        }
+
+        #level-select.show {
+            opacity: 1
+        }
+
+        #level-select.hidden {
+            display: none;
+            opacity: 0
+        }
+
+        #level-select h1 {
+            font-size: 38px;
+            color: #ffe066;
+            font-weight: 900;
+            letter-spacing: 6px;
+            text-shadow: 0 4px 0 #000, 0 0 40px rgba(255, 224, 102, .5);
+            margin-bottom: 12px
+        }
+
+        .level-cards {
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            justify-content: center
+        }
+
+        .level-card {
+            position: relative;
+            width: 260px;
+            height: 340px;
+            border-radius: 20px;
+            border: 3px solid #d4af37;
+            overflow: hidden;
+            cursor: pointer;
+            background: #1a0e05;
+            font-family: inherit;
+            padding: 0;
+            transition: .25s;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, .7)
+        }
+
+        .level-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            border-color: #ffe066;
+            box-shadow: 0 20px 48px rgba(212, 175, 55, .35)
+        }
+
+        .level-card:active {
+            transform: translateY(-4px) scale(1.01)
+        }
+
+        .level-card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center
+        }
+
+        .level-bg-hall {
+            background: radial-gradient(circle at 50% 30%, #b0804a 0%, #6a3a1c 45%, #2a1408 100%)
+        }
+
+        .level-bg-hall::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 30% 70%, rgba(255, 200, 120, .15), transparent 40%),
+                repeating-linear-gradient(45deg, transparent 0 40px, rgba(0, 0, 0, .08) 40px 42px),
+                repeating-linear-gradient(-45deg, transparent 0 40px, rgba(0, 0, 0, .08) 40px 42px)
+        }
+
+        .level-bg-kitchen {
+            background: radial-gradient(circle at 50% 30%, #a8c8e0 0%, #4a7a9a 45%, #0a1a2a 100%)
+        }
+
+        .level-bg-kitchen::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent 0 25px, rgba(255, 255, 255, .06) 25px 27px),
+                repeating-linear-gradient(90deg, transparent 0 25px, rgba(255, 255, 255, .06) 25px 27px)
+        }
+
+        .level-card-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 22px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .75) 60%, rgba(0, 0, 0, .92) 100%)
+        }
+
+        .level-card-bug {
+            font-size: 96px;
+            line-height: 1;
+            margin-top: 24px;
+            filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .9));
+            animation: bug-bob 3s ease-in-out infinite
+        }
+
+        @keyframes bug-bob {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-8px)
+            }
+        }
+
+        .level-card-title {
+            margin-top: auto;
+            font-size: 28px;
+            color: #ffe066;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-shadow: 0 3px 0 #000, 0 0 24px rgba(255, 224, 102, .5)
+        }
+
+        .level-card-sub {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #d9c39a;
+            letter-spacing: 2px;
+            font-weight: 700
+        }
+
+        .level-card-tag {
+            margin-top: 14px;
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(255, 224, 102, .15);
+            border: 1px solid #ffe066;
+            border-radius: 10px;
+            color: #ffe066;
+            font-size: 10px;
+            letter-spacing: 2px;
+            font-weight: 900;
+            align-self: center
+        }
+
+        /* Назад в меню */
+        #level-back {
+            margin-top: 8px;
+            padding: 12px 30px;
+            font-size: 14px;
+            font-weight: 900;
+            background: transparent;
+            color: #d4af37;
+            border: 2px solid #7a4f2a;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 3px;
+            transition: .15s
+        }
+
+        #level-back:hover {
+            border-color: #d4af37;
+            color: #ffe066
+        }
+
+        /* ================================================== */
+/* ============ ТУТОРИАЛ ============ */
+/* ================================================== */
+#tutorial {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    transition: opacity .5s;
+}
+#tutorial.hidden { display: none }
+#tutorial.show   { opacity: 1 }
+
+.tut-banner {
+    position: absolute;
+    top: clamp(20px, 8vh, 80px);
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(560px, 88vw);
+    padding: clamp(10px, 1.5vh, 16px) clamp(14px, 2vw, 30px);
+    background: linear-gradient(135deg, rgba(30, 18, 8, .96), rgba(12, 6, 3, .96));
+    border: 2px solid #ffd54a;
+    border-radius: 8px;
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, .9),
+        0 0 60px rgba(255, 180, 60, .35),
+        inset 0 0 40px rgba(255, 150, 60, .12);
+    text-align: center;
+    animation: tut-drop .6s cubic-bezier(.34, 1.56, .64, 1);
+    backdrop-filter: blur(6px);
+}
+.tut-banner.hidden { display: none }
+
+@keyframes tut-drop {
+    0%   { transform: translateX(-50%) translateY(-40px) scale(.85); opacity: 0 }
+    100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1 }
+}
+
+.tut-text {
+    font-family: 'Russo One', 'Arial Black', sans-serif;
+    font-size: clamp(13px, 2.2vh, 20px);
+    color: #ffe066;
+    font-weight: 900;
+    letter-spacing: clamp(1px, 0.4vw, 4px);
+    line-height: 1.25;
+    text-transform: uppercase;
+    text-shadow:
+        0 2px 0 #000,
+        0 0 20px rgba(255, 180, 60, .6);
+}
+.tut-text.show {
+    animation: tut-text-in .5s cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes tut-text-in {
+    0%   { opacity: 0; letter-spacing: 20px; transform: scale(.9) }
+    100% { opacity: 1; letter-spacing: clamp(1px, 0.4vw, 4px); transform: scale(1) }
+}
+
+.tut-pointer {
+    position: absolute;
+    width: clamp(40px, 6vh, 55px);
+    height: clamp(40px, 6vh, 55px);
+    z-index: 61;
+    transition: opacity .3s;
+    pointer-events: none;
+    filter: drop-shadow(0 0 12px rgba(255, 180, 60, .9));
+    animation: tut-ptr-pulse 1s ease-in-out infinite;
+    will-change: transform, left, top;
+}
+.tut-pointer.hidden { display: none }
+
+@keyframes tut-ptr-pulse {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 180, 60, .7)) }
+    50%      { filter: drop-shadow(0 0 28px rgba(255, 220, 120, 1)) }
+}
+
+.tut-joystick {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(30px, 8vh, 70px);
+    transform: translateX(-50%);
+    width: clamp(80px, 12vh, 130px);
+    height: clamp(80px, 12vh, 130px);
+    pointer-events: none;
+    animation: tj-appear .5s cubic-bezier(.34, 1.56, .64, 1);
+}
+.tut-joystick.hidden { display: none }
+
+@keyframes tj-appear {
+    0%   { opacity: 0; transform: translateX(-50%) scale(.7) }
+    100% { opacity: 1; transform: translateX(-50%) scale(1) }
+}
+
+.tj-base {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 213, 74, .7);
+    background: rgba(0, 0, 0, .35);
+    box-shadow:
+        0 0 40px rgba(255, 180, 60, .5),
+        inset 0 0 30px rgba(255, 180, 60, .15);
+    backdrop-filter: blur(4px);
+}
+
+.tj-knob {
+    position: absolute;
+    width: 42%;
+    height: 42%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffe170, #d4af37 70%, #8a5a10);
+    top: 50%;
+    left: 50%;
+    box-shadow:
+        0 0 30px #ffd54a,
+        inset 0 -4px 8px rgba(120, 60, 10, .6);
+    animation: tj-circle 2.8s ease-in-out infinite;
+}
+
+@keyframes tj-circle {
+    0%   { transform: translate(-50%, -50%) translate(0, -28%) }
+    25%  { transform: translate(-50%, -50%) translate(28%, 0) }
+    50%  { transform: translate(-50%, -50%) translate(0, 28%) }
+    75%  { transform: translate(-50%, -50%) translate(-28%, 0) }
+    100% { transform: translate(-50%, -50%) translate(0, -28%) }
+}
+
+.tj-hint {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: clamp(6px, 1.5vh, 14px);
+    padding: clamp(4px, 0.8vh, 6px) clamp(10px, 1.5vw, 16px);
+    background: rgba(15, 8, 3, .85);
+    border: 1px solid rgba(255, 213, 74, .6);
+    color: #ffd54a;
+    font-size: clamp(8px, 1.2vh, 11px);
+    font-weight: 900;
+    letter-spacing: clamp(1px, 0.3vw, 3px);
+    border-radius: 6px;
+    white-space: nowrap;
+    animation: tj-hint-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes tj-hint-blink {
+    0%, 100% { opacity: .75 }
+    50%      { opacity: 1 }
+}
+
+.tut-dots {
+    position: absolute;
+    bottom: clamp(20px, 6vh, 60px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: clamp(5px, 1vh, 10px);
+    padding: clamp(5px, 1vh, 10px) clamp(10px, 1.5vw, 16px);
+    background: rgba(15, 8, 3, .7);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 213, 74, .3);
+}
+.tut-dot {
+    width: clamp(7px, 1.2vh, 10px);
+    height: clamp(7px, 1.2vh, 10px);
+    border-radius: 50%;
+    background: rgba(255, 213, 74, .25);
+    transition: .3s;
+}
+.tut-dot.active {
+    background: #ffd54a;
+    box-shadow: 0 0 12px #ffd54a;
+    transform: scale(1.4);
+}
+.tut-dot.done { background: rgba(255, 213, 74, .6) }
+
+        /* ================================================== */
+        /* ============ BEAUTIFUL OVERLAY (Win/Lose) ============ */
+        /* ================================================== */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity .4s;
+        }
+        #overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .ov-vignette {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at center,
+                    rgba(0, 0, 0, .5) 0%,
+                    rgba(0, 0, 0, .85) 60%,
+                    rgba(0, 0, 0, .98) 100%);
+            backdrop-filter: blur(4px);
+            animation: ov-vig-in .8s ease-out;
+        }
+        @keyframes ov-vig-in { from { opacity: 0 } to { opacity: 1 } }
+
+        .ov-panel {
+            position: relative;
+            z-index: 2;
+            min-width: min(520px, 90vw);
+            padding: 40px 44px 34px;
+            background: linear-gradient(155deg, rgba(30, 18, 8, .96), rgba(10, 5, 2, .98));
+            border: 2px solid #ffd54a;
+            border-radius: 12px;
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, .95),
+                0 0 100px rgba(255, 180, 60, .2),
+                inset 0 0 60px rgba(255, 150, 60, .08);
+            text-align: center;
+            animation: ov-panel-in .7s cubic-bezier(.34, 1.56, .64, 1);
+        }
+        @keyframes ov-panel-in {
+            0%   { transform: scale(.7) translateY(40px); opacity: 0 }
+            100% { transform: scale(1) translateY(0); opacity: 1 }
+        }
+
+        .ov-icon {
+            font-size: 72px;
+            line-height: 1;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .9));
+            animation: ov-icon-pop .8s .15s cubic-bezier(.34, 1.8, .64, 1) backwards;
+        }
+        @keyframes ov-icon-pop {
+            0%   { transform: scale(0) rotate(-180deg); opacity: 0 }
+            100% { transform: scale(1) rotate(0deg); opacity: 1 }
+        }
+
+        .ov-title {
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            font-size: 44px;
+            color: #ff4444;
+            font-weight: 900;
+            letter-spacing: 6px;
+            margin: 0 0 8px;
+            text-transform: uppercase;
+            text-shadow:
+                3px 3px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                0 8px 24px rgba(0, 0, 0, .9),
+                0 0 60px currentColor;
+            animation: ov-title-shake .8s .3s cubic-bezier(.36, .07, .19, .97) backwards;
+        }
+        @keyframes ov-title-shake {
+            0%, 100% { transform: translateX(0) }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px) }
+            20%, 40%, 60%, 80% { transform: translateX(6px) }
+        }
+
+        .ov-sub {
+            font-size: 14px;
+            color: #d9c39a;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin: 0 0 28px;
+            font-weight: 700;
+        }
+
+        .ov-stats {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .ov-stat {
+            flex: 1;
+            min-width: 110px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, rgba(60, 35, 15, .7), rgba(20, 10, 5, .9));
+            border: 2px solid #7a4f2a;
+            border-radius: 10px;
+            opacity: 0;
+            animation: ov-stat-in .5s cubic-bezier(.34, 1.56, .64, 1) forwards;
+        }
+        .ov-stat:nth-child(1) { animation-delay: .5s }
+        .ov-stat:nth-child(2) { animation-delay: .65s }
+        .ov-stat:nth-child(3) { animation-delay: .8s }
+        .ov-stat:nth-child(4) { animation-delay: .95s }
+        @keyframes ov-stat-in {
+            0%   { transform: translateY(20px); opacity: 0 }
+            100% { transform: translateY(0); opacity: 1 }
+        }
+
+        .ov-stat-label {
+            font-size: 10px;
+            color: #d9c39a;
+            letter-spacing: 3px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .ov-stat-value {
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            font-size: 26px;
+            color: #ffd54a;
+            font-weight: 900;
+            text-shadow: 0 2px 0 #000, 0 0 20px rgba(255, 180, 60, .5);
+        }
+
+        #overlay button {
+            display: block;
+            margin: 0 auto;
+            padding: 16px 40px;
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffd54a 0%, #e8a020 50%, #b8761a 100%);
+            color: #1a0e05;
+            border: 2px solid #ffd54a;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, .8),
+                0 0 40px rgba(255, 200, 80, .4),
+                inset 0 2px 0 rgba(255, 255, 200, .8);
+            transition: all .25s cubic-bezier(.34, 1.4, .64, 1);
+            animation: ov-stat-in .5s 1.1s cubic-bezier(.34, 1.56, .64, 1) backwards;
+        }
+        #overlay button:hover {
+            transform: translateY(-3px) scale(1.04);
+            background: linear-gradient(135deg, #ffe170 0%, #ffb040 50%, #d89030 100%);
+            box-shadow:
+                0 16px 40px rgba(0, 0, 0, .9),
+                0 0 70px rgba(255, 200, 80, .8),
+                inset 0 2px 0 rgba(255, 255, 200, .9);
+        }
+        #overlay button:active { transform: translateY(0) scale(.98) }
+
+        /* Вариант "победный" — зелёный акцент */
+        .ov-panel.win .ov-title { color: #7dff7d }
+        .ov-panel.win .ov-icon { color: #7dff7d }
+
+        /* Скины — стиль для замка и цепи */
+        .skin-chain {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            height: 20px;
+            background-image:
+                repeating-linear-gradient(90deg,
+                    transparent 0 6px,
+                    #4a4a4a 6px 10px,
+                    transparent 10px 16px);
+            opacity: .5;
+            border-radius: 20px;
+            pointer-events: none;
+        }
+
+        /* ============ ПОДСКАЗКА "ПОВЕРНИ ТЕЛЕФОН" ============ */
+        #rotate-hint {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 40%, #3a1a08, #050302 70%);
+            color: #ffd54a;
+            text-align: center;
+            padding: 40px;
+            gap: 30px;
+        }
+        #rotate-hint.show {
+            display: flex;
+        }
+        .rotate-icon {
+            font-size: 100px;
+            animation: rot-wiggle 2s ease-in-out infinite;
+        }
+        @keyframes rot-wiggle {
+            0%, 100% { transform: rotate(0deg) }
+            50%      { transform: rotate(90deg) }
+        }
+        .rotate-text {
+            font-family: 'Russo One', 'Arial Black', sans-serif;
+            font-size: 22px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0 #000, 0 0 30px rgba(255, 180, 60, .6);
+        }
+
+        /* ============ SAFE-AREA (iPhone с чёлкой) ============ */
+        #hud {
+            padding-top: max(14px, env(safe-area-inset-top)) !important;
+            padding-left: max(14px, env(safe-area-inset-left)) !important;
+            padding-right: max(14px, env(safe-area-inset-right)) !important;
+            padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+        }
+        #quest-panel {
+            top: max(90px, calc(env(safe-area-inset-top) + 76px)) !important;
+            left: max(14px, env(safe-area-inset-left)) !important;
+        }
+        #abilities {
+            right: max(18px, env(safe-area-inset-right)) !important;
+            bottom: max(18px, env(safe-area-inset-bottom)) !important;
+        }
+         
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+
+<body>
+    <div id="game"></div>
+
+    <!-- ============ ГЛАВНОЕ МЕНЮ ============ -->
+    <div id="main-menu" class="show">
+    
+        <!-- Пол и стена -->
+        <div class="scene-floor"></div>
+        <div class="scene-wall"></div>
+        <div class="scene-window"></div>
+    
+        <!-- Мерцающая лампа слева -->
+        <div class="scene-lamp">
+            <div class="lamp-wire"></div>
+            <div class="lamp-shade"></div>
+            <div class="lamp-bulb"></div>
+            <div class="lamp-glow"></div>
+        </div>
+    
+        <!-- Свеча справа -->
+        <div class="scene-candle">
+            <div class="candle-body"></div>
+            <div class="candle-flame"></div>
+            <div class="candle-halo"></div>
+        </div>
+    
+        <!-- Пылинки в воздухе -->
+        <div class="dust">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+    
+        <!-- Ползающий таракан -->
+        <div class="menu-bug">
+            <div class="bug-body">
+                <div class="bug-head"></div>
+                <div class="bug-ant bug-ant-l"></div>
+                <div class="bug-ant bug-ant-r"></div>
+                <div class="bug-leg bug-leg-1"></div>
+                <div class="bug-leg bug-leg-2"></div>
+                <div class="bug-leg bug-leg-3"></div>
+                <div class="bug-leg bug-leg-4"></div>
+                <div class="bug-leg bug-leg-5"></div>
+                <div class="bug-leg bug-leg-6"></div>
+            </div>
+        </div>
+    
+        <!-- Контейнер меню -->
+        <div class="menu-container">
+    
+            <div class="menu-title">
+                <div class="title-bug">🪳</div>
+                <h1>ЖОРА</h1>
+                <div class="sub">✦ ХАОС В ДОМЕ ✦</div>
+            </div>
+    
+            <!-- Страница 1: ГЛАВНАЯ -->
+            <div class="menu-page active" id="menu-page-main">
+                <div class="menu-buttons">
+                    <button class="menu-btn primary" id="menu-btn-play">
+                        <span class="btn-bg"></span>
+                        <span class="btn-label">ИГРАТЬ</span>
+                        <span class="btn-arrow">▶</span>
+                    </button>
+                    <button class="menu-btn" id="menu-btn-skins">
+                        <span class="btn-bg"></span>
+                        <span class="btn-label">СКИНЫ</span>
+                        <span class="btn-arrow">›</span>
+                    </button>
+                    <button class="menu-btn" id="menu-btn-records">
+                        <span class="btn-bg"></span>
+                        <span class="btn-label">РЕКОРДЫ</span>
+                        <span class="btn-arrow">›</span>
+                    </button>
+                    <button class="menu-btn" id="menu-btn-settings">
+                        <span class="btn-bg"></span>
+                        <span class="btn-label">НАСТРОЙКИ</span>
+                        <span class="btn-arrow">›</span>
+                    </button>
+                    <button class="menu-btn" id="menu-btn-about">
+                        <span class="btn-bg"></span>
+                        <span class="btn-label">ОБ ИГРЕ</span>
+                        <span class="btn-arrow">›</span>
+                    </button>
+                </div>
+                <div class="menu-footer">
+                    <span>V 1.0</span>
+                    <span class="dot">·</span>
+                    <span>MADE BY NIKITA KOCHAN</span>
+                </div>
+            </div>
+    
+            <!-- Страница 2: СКИНЫ -->
+            <div class="menu-page" id="menu-page-skins">
+                <div class="menu-page-title">СКИНЫ</div>
+                <div id="menu-skins-grid"></div>
+                <button class="menu-back">← НАЗАД</button>
+            </div>
+    
+            <!-- Страница 3: РЕКОРДЫ -->
+            <div class="menu-page" id="menu-page-records">
+                <div class="menu-page-title">РЕКОРДЫ</div>
+                <div id="menu-records-body"></div>
+                <button class="menu-back">← НАЗАД</button>
+            </div>
+    
+            <!-- Страница 4: НАСТРОЙКИ -->
+            <div class="menu-page" id="menu-page-settings">
+                <div class="menu-page-title">НАСТРОЙКИ</div>
+    
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>МУЗЫКА</span>
+                        <span class="settings-value">35%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="35" class="roach-slider" id="set-music">
+                </div>
+    
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>ЗВУКИ</span>
+                        <span class="settings-value">70%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" class="roach-slider" id="set-sfx">
+                </div>
+    
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>ГОЛОСА</span>
+                        <span class="settings-value">70%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" class="roach-slider" id="set-voice">
+                </div>
+    
+                <button id="btn-reset-tutorial" class="menu-back" style="margin-top:10px; color:#ffad44">
+                    СБРОСИТЬ ОБУЧЕНИЕ
+                </button>
+                <button class="menu-back">← НАЗАД</button>
+            </div>
+    
+            <!-- Страница 5: ОБ ИГРЕ -->
+            <div class="menu-page" id="menu-page-about">
+                <div class="menu-page-title">ОБ ИГРЕ</div>
+                <p>Ты — обычный таракан Жора. Живёшь на кухне у вредного мужика и его жены.</p>
+                <p>Твоя цель — не просто выжить, а довести их до истерики и стать легендой тараканьего мира.</p>
+                <button class="menu-back">← НАЗАД</button>
+            </div>
+    
+        </div>
+    </div>
+
+    <!-- ============ ВЫБОР УРОВНЯ ============ -->
+    <div id="level-select" class="hidden">
+        <h1>ВЫБЕРИ УРОВЕНЬ</h1>
+        <div class="level-cards">
+            <button class="level-card" data-level="0">
+                <div class="level-card-bg level-bg-hall"></div>
+                <div class="level-card-content">
+                    <div class="level-card-bug">🪳</div>
+                    <div class="level-card-title">УРОВЕНЬ 1</div>
+                    <div class="level-card-sub">ЗАЛ</div>
+                    <div class="level-card-tag">СОСЕД И КОТ</div>
+                </div>
+            </button>
+            <button class="level-card" data-level="1">
+                <div class="level-card-bg level-bg-kitchen"></div>
+                <div class="level-card-content">
+                    <div class="level-card-bug">🪳</div>
+                    <div class="level-card-title">УРОВЕНЬ 2</div>
+                    <div class="level-card-sub">КУХНЯ</div>
+                    <div class="level-card-tag">ЖЕНА И СОБАКА</div>
+                </div>
+            </button>
+        </div>
+        <button id="level-back">← В МЕНЮ</button>
+    </div>
+
+    <div id="hud">
+        <div class="top">
+            <div>
+                <div class="stat sram" id="hud-sram">СРАМ: 0</div>
+                <div class="stat hp" id="hud-hp">❤️❤️❤️❤️❤️</div>
+            </div>
+            <div class="stat wave" id="hud-wave">ВОЛНА 1<br><span style="font-size:14px;opacity:.8">ПАКОСТЕЙ: 0</span>
+            </div>
+        </div>
+        <div id="host-emote">😴</div>
+        <div id="banner"></div>
+    </div>
+
+    <div id="quest-panel" class="hidden">
+        <div class="qp-icon">🐭</div>
+        <div class="qp-content">
+            <div class="qp-title">ЗАКАЗ</div>
+            <div class="qp-desc">Принеси крошек</div>
+            <div class="qp-progress">
+                <div class="qp-bar">
+                    <div class="qp-fill"></div>
+                </div>
+                <div class="qp-count">0 / 0</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dialog" class="hidden">
+        <div class="dlg-box">
+            <div class="dlg-portrait">🐭</div>
+            <div class="dlg-content">
+                <div class="dlg-name">Крыса-барыга</div>
+                <div class="dlg-text">Эй, таракан! Иди сюда...</div>
+                <button class="dlg-next">ДАЛЕЕ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="joy">
+        <div class="knob"></div>
+    </div>
+
+    <div id="abilities">
+        <div class="ab-btn locked" id="ab-fake">
+            <div class="ab-fill"></div>
+            <div class="ab-icon">💀</div>
+            <div class="ab-cd"></div>
+            <div class="ab-key">R</div>
+        </div>
+        <div class="ab-btn locked" id="ab-scream">
+            <div class="ab-fill"></div>
+            <div class="ab-icon">😱</div>
+            <div class="ab-cd"></div>
+            <div class="ab-key">E</div>
+        </div>
+        <div class="ab-btn locked" id="ab-jump">
+            <div class="ab-fill"></div>
+            <div class="ab-icon">🦘</div>
+            <div class="ab-cd"></div>
+            <div class="ab-key">SPC</div>
+        </div>
+    </div>
+
+    <div id="upgrade-menu">
+        <h2>ВЫБЕРИ ПАКОСТЬ</h2>
+        <div id="upgrade-cards"></div>
+    </div>
+
+        <!-- ============ ТУТОРИАЛ ============ -->
+            <!-- ============ ТУТОРИАЛ ============ -->
+            <div id="tutorial" class="hidden">
+                <div class="tut-banner hidden" id="tut-banner">
+                    <div class="tut-text" id="tut-text"></div>
+                </div>
+            
+                <!-- Стрелка от таракана к цели -->
+                <div class="tut-pointer hidden" id="tut-pointer">
+                    <svg viewBox="0 0 60 60" width="55" height="55">
+                        <polygon points="6,10 54,30 6,50 16,30" fill="#ffd54a" stroke="#000" stroke-width="2" stroke-linejoin="round" />
+                    </svg>
+                </div>
+            
+                <!-- Анимация джойстика (для обучения движению) -->
+                <div class="tut-joystick hidden" id="tut-joystick">
+                    <div class="tj-base"></div>
+                    <div class="tj-knob"></div>
+                    <div class="tj-hint">ТАП И ВЕДИ</div>
+                </div>
+            
+                <div class="tut-dots" id="tut-dots"></div>
+            </div>
+        
+        <!-- ============ BEAUTIFUL OVERLAY (Win/Lose) ============ -->
+        <div id="overlay">
+            <div class="ov-vignette"></div>
+            <div class="ov-panel">
+                <div class="ov-icon" id="ov-icon">💀</div>
+                <h1 class="ov-title" id="ov-title">ТЕБЯ РАЗДАВИЛИ</h1>
+                <p class="ov-sub" id="ov-sub"></p>
+        
+                <div class="ov-stats" id="ov-stats"></div>
+        
+                <button id="ov-btn">ЕЩЁ РАЗОК</button>
+            </div>
+        </div>
+
+        <script type="module" src="src/main.js"></script>
+        
+        <script>
+            // ==== Service Worker для PWA ====
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch(err => {
+                        console.warn('SW не зарегистрировался:', err);
+                    });
+                });
+            }
+
+            // ==== Блокировка ориентации landscape ====
+            async function lockLandscape() {
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape');
+                    }
+                } catch (e) { }
+            }
+            window.addEventListener('pointerdown', () => lockLandscape(), { once: true });
+            window.addEventListener('touchstart', () => lockLandscape(), { once: true });
+
+            // Резервная подсказка «поверни телефон»
+            function checkOrientation() {
+                const isPortrait = window.innerHeight > window.innerWidth;
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                let hint = document.getElementById('rotate-hint');
+
+                if (isPortrait && isMobile) {
+                    if (!hint) {
+                        hint = document.createElement('div');
+                        hint.id = 'rotate-hint';
+                        hint.innerHTML = '<div class="rotate-icon">📱</div><div class="rotate-text">ПОВЕРНИ ТЕЛЕФОН ГОРИЗОНТАЛЬНО</div>';
+                        document.body.appendChild(hint);
+                    }
+                    hint.classList.add('show');
+                } else if (hint) {
+                    hint.classList.remove('show');
+                }
+            }
+            window.addEventListener('resize', checkOrientation);
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => { checkOrientation(); lockLandscape(); }, 300);
+            });
+            document.addEventListener('DOMContentLoaded', checkOrientation);
+        </script>
+        </body>
+
+</html>
